@@ -1,0 +1,3 @@
+users:
+  sudo_enabled: True
+  bash_enabled: True

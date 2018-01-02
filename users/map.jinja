@@ -1,47 +1,62 @@
-# vim: sts=2 ts=2 sw=2 et ai
-{% set users = salt['grains.filter_by']({
+# -*- coding: utf-8 -*-
+# vim: ft=jinja
+
+{## Start with defaults from defaults.yaml ##}
+{% import_yaml 'users/defaults.yaml' as default_settings %}
+
+{##
+Setup variables using grains['os_family'] based logic, only add key:values
+that differ from what is in defaults.yaml
+##}
+{% set os_family_map = salt['grains.filter_by']({
   'Debian': {
     'sudoers_dir': '/etc/sudoers.d',
     'sudoers_file': '/etc/sudoers',
-    'googleauth_dir': '/etc/google_authenticator.d',
+    'ssh_key_dir': '.ssh',
+    'ssh_auth_conf_file': '.ssh/authorized_keys',
+    'ssh_known_hosts_conf_file': '.ssh/known_hosts',
     'root_group': 'root',
     'shell': '/bin/bash',
     'visudo_shell': '/bin/bash',
     'bash_package': 'bash',
     'sudo_package': 'sudo',
-    'googleauth_package': 'libpam-google-authenticator',
   },
   'Gentoo': {
     'sudoers_dir': '/etc/sudoers.d',
     'sudoers_file': '/etc/sudoers',
-    'googleauth_dir': '/etc/google_authenticator.d',
+    'ssh_key_dir': '.ssh',
+    'ssh_auth_conf_file': '.ssh/authorized_keys',
+    'ssh_known_hosts_conf_file': '.ssh/known_hosts',
     'root_group': 'root',
     'shell': '/bin/bash',
     'visudo_shell': '/bin/bash',
     'bash_package': 'app-shells/bash',
     'sudo_package': 'app-admin/sudo',
-    'googleauth_package': 'libpam-google-authenticator',
   },
   'FreeBSD': {
     'sudoers_dir': '/usr/local/etc/sudoers.d',
     'sudoers_file': '/usr/local/etc/sudoers',
-    'googleauth_dir': '/usr/local/etc/google_authenticator.d',
+    'ssh_key_dir': '.ssh',
+    'ssh_auth_conf_file': '.ssh/authorized_keys',
+    'ssh_known_hosts_conf_file': '.ssh/known_hosts',
     'root_group': 'wheel',
     'shell': '/bin/csh',
     'visudo_shell': '/usr/local/bin/bash',
     'bash_package': 'bash',
     'sudo_package': 'sudo',
-    'googleauth_package': 'pam_google_authenticator',
-  },
-  'default': {
-    'sudoers_dir': '/etc/sudoers.d',
-    'sudoers_file': '/etc/sudoers',
-    'googleauth_dir': '/etc/google_authenticator.d',
-    'root_group': 'root',
-    'shell': '/bin/bash',
-    'visudo_shell': '/bin/bash',
-    'bash_package': 'bash',
-    'sudo_package': 'sudo',
-    'googleauth_package': 'libpam-google-authenticator',
-  },
-}, merge=salt['pillar.get']('users:lookup')) %}
+  }
+}
+, grain="os_family"
+, merge=salt['pillar.get']('users:lookup'), default='Debian') %}
+
+
+{## Merge the flavor_map to the default settings ##}
+{% do default_settings.users.update(os_family_map) %}
+
+{## Merge in users:lookup pillar ##}
+{% set users = salt['pillar.get'](
+        'users',
+        default=default_settings.users,
+        merge=True
+    )
+%}
