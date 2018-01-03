@@ -203,7 +203,7 @@ users_{{ user }}_ssh_knwon_hosts_purge:
     
       {%- if params.ssh.known_hosts.hosts is defined %}
 users_{{ user }}_ssh_knwon_hosts:
-  file.present:
+  file.managed:
     - name: {{ user_home | path_join(users.ssh_known_hosts_conf_file) }}
     - user: {{ user }}
     - group: {{ user_group }}
