@@ -8,7 +8,7 @@ users_{{ users.sudoers_dir }}:
   file.directory:
     - name: {{ users.sudoers_dir }}
 
-users_sudoers_defaults:
+users_sudoer_defaults:
   file.append:
     - name: {{ users.sudoers_file }} 
     - text:

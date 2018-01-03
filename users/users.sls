@@ -1,4 +1,3 @@
-
 {%- from "users/map.jinja" import users with context %}
 
 include:
@@ -30,10 +29,16 @@ users_{{ user }}_group:
 
 # user
 ##################################################################### 
+  {%- if user == 'root' %}
+    {%- set user_home = '/root' %}
+  {%- else %}
+    {%- set user_home = params.get('home', '/home' | path_join(user)) %}
+  {%- endif %}
+
 {{ user }}:
   user.present:
-    - home: {{ home }}
-    - shell: {{ params.get('shell', '/bin/bash'))) }}
+    - home: {{ user_home }}
+    - shell: {{ params.get('shell', '/bin/bash') }}
     {%- if params.uid is defined %}
     - uid: {{ params.uid }}
     {%- endif %}
@@ -97,7 +102,8 @@ users_{{ user }}_group:
 #####################################################################
 
   {% if params.ssh is defined %}
-    {%- set user_ssh_dir = params.get('home', '/home') | path_join(users.ssh_key_dir)) %}
+
+    {%- set user_ssh_dir = user_home | path_join(users.ssh_key_dir) %}
 users_{{ user }}_ssh_dir:
   file.directory:
     - name: {{ user_ssh_dir }}
@@ -162,7 +168,7 @@ users_{{ user }}_ssh_public_key:
       {%- if params.ssh.auth.purge is defined and params.ssh.auth.purge %}
 users_{{ user }}_ssh_auth_purge:
   file.absent:
-    - name: {{ params.get('home', '/home') | path_join(user, users.ssh_auth_conf_file)) }}
+    - name: {{ user_home | path_join(users.ssh_auth_conf_file) }}
     - require:
       - user: {{ user }}
       {%- endif %}
@@ -170,7 +176,7 @@ users_{{ user }}_ssh_auth_purge:
       {%- if params.ssh.auth.keys is defined %}
 users_{{ user }}_ssh_auth:
   file.present:
-    - name: {{ params.get('home', '/home') | path_join(user, users.ssh_auth_conf_file)) }}
+    - name: {{ user_home | path_join(users.ssh_auth_conf_file) }}
     - user: {{ user }}
     - group: {{ user_group }}
     - mode: 600
@@ -182,28 +188,28 @@ users_{{ user }}_ssh_auth:
     - user: {{ user }}
     - require:
       - user: {{ user }}
+      {%- endif %}
+
     {%- endif %}
 
-  {%- endif %}
-
-  {% if params.ssh.known_hosts is defined %}
-    {%- if params.ssh.known_hosts.purge is defined and params.ssh.known_hosts.purge %}
+    {% if params.ssh.known_hosts is defined %}
+      {%- if params.ssh.known_hosts.purge is defined and params.ssh.known_hosts.purge %}
 users_{{ user }}_ssh_knwon_hosts_purge:
   file.absent:
-    - name: {{ params.get('home', '/home') | path_join(user, users.ssh_known_hosts_conf_file)) }}
+    - name: {{ user_home | path_join(users.ssh_known_hosts_conf_file) }}
     - require:
       - user: {{ user }}
-    {%- endif %}
+      {%- endif %}
     
-    {%- if params.ssh.known_hosts.hosts is defined %}
+      {%- if params.ssh.known_hosts.hosts is defined %}
 users_{{ user }}_ssh_knwon_hosts:
   file.present:
-    - name: {{ params.get('home', '/home') | path_join(user, users.ssh_known_hosts_conf_file)) }}
+    - name: {{ user_home | path_join(users.ssh_known_hosts_conf_file) }}
     - user: {{ user }}
     - group: {{ user_group }}
     - mode: 600
     
-      {%- for k, v in params.ssh.known_hosts.hosts.iteritems() %}
+        {%- for k, v in params.ssh.known_hosts.hosts.iteritems() %}
 users_{{ user }}_ssh_knwon_hosts_{{ loop.index0 }}:
   ssh_known_hosts.present:
     - name: {{ k }}
@@ -217,18 +223,19 @@ users_{{ user }}_ssh_knwon_hosts_{{ loop.index0 }}:
     {%- endif %}
     - require:
       - file: users_{{ user }}_ssh_knwon_hosts
-      {%- endfor %}
+        {%- endfor %}
 
+      {%- endif %}
     {%- endif %}
+
   {%- endif %}
 
-{%- endfor %}
 
 
 # sudo
 #####################################################################
 
-{%- if users.sudo_enabled and params.sudo is defined %}
+  {%- if users.sudo_enabled and params.sudo is defined %}
 
 users_sudoer_{{ user }}:
   file.managed:
@@ -238,8 +245,8 @@ users_sudoer_{{ user }}:
     - group: {{ users.root_group }}
     - mode: '0440'
 
-  {%- if params.sudo.rules is defined %}
-    {%- for rule in params.sudo.rules %}
+    {%- if params.sudo.rules is defined %}
+      {%- for rule in params.sudo.rules %}
 "validate {{ user }} sudo rule {{ loop.index0 }} {{ user }} {{ rule }}":
   cmd.run:
     - name: 'visudo -cf - <<<"$rule" | { read output; if [[ $output != "stdin: parsed OK" ]] ; then echo $output ; fi }'
@@ -252,10 +259,10 @@ users_sudoer_{{ user }}:
       - file: users_sudoer_{{ user }}
     - require_in:
       - file: users_{{ users.sudoers_dir }}/{{ user }}
-    {%- endfor %}
+      {%- endfor %}
 
-    {%- if params.sudo.defaults is defined %}
-      {%- for entry in params.sudo.defaults %}
+      {%- if params.sudo.defaults is defined %}
+        {%- for entry in params.sudo.defaults %}
 "validate {{ user }} sudo Defaults {{ loop.index0 }} {{ user }} {{ entry }}":
   cmd.run:
     - name: 'visudo -cf - <<<"$rule" | { read output; if [[ $output != "stdin: parsed OK" ]] ; then echo $output ; fi }'
@@ -266,8 +273,8 @@ users_sudoer_{{ user }}:
       - rule: "Defaults:{{ user }} {{ entry }}"
     - require_in:
       - file: users_{{ users.sudoers_dir }}/{{ user }}
-      {%- endfor %}
-    {%- endif %}
+        {%- endfor %}
+      {%- endif %}
 
 users_{{ users.sudoers_dir }}/{{ user }}:
   file.managed:
@@ -295,15 +302,17 @@ users_{{ users.sudoers_dir }}/{{ user }}:
     - watch:
       - file: {{ users.sudoers_dir }}/{{ user }}
 
-  {%- endif %}
+    {%- endif %}
 
-{%- else %}
+  {%- else %}
 
 users_{{ users.sudoers_dir }}/{{ user }}:
   file.absent:
     - name: {{ users.sudoers_dir }}/{{ user }}
 
-{%- endif %}
+  {%- endif %}
+
+{%- endfor %}
 
 
 # remove users
