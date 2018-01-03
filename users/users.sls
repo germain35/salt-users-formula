@@ -173,7 +173,7 @@ users_{{ user }}_ssh_auth_purge:
       - user: {{ user }}
       {%- endif %}
 
-      {%- if params.ssh.auth.keys is defined %}
+      {%- if 'keys' in params.ssh.auth %}
 users_{{ user }}_ssh_auth:
   file.present:
     - name: {{ user_home | path_join(users.ssh_auth_conf_file) }}
@@ -181,10 +181,7 @@ users_{{ user }}_ssh_auth:
     - group: {{ user_group }}
     - mode: 600
   ssh_auth.present:
-    - names:
-      {%- for key in params.ssh.auth.keys %} 
-      - {{ key }}
-      {%- endfor %}
+    - names: {{  params.ssh.auth.get('keys', []) }}
       {%- if params.ssh.auth.enc is defined %}
     - enc: {{ params.ssh.auth.enc }}
       {%- endif %}
