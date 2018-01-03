@@ -181,7 +181,10 @@ users_{{ user }}_ssh_auth:
     - group: {{ user_group }}
     - mode: 600
   ssh_auth.present:
-    - names: {{ params.ssh.auth.keys }}
+    - names:
+      {%- for key in params.ssh.auth.keys %} 
+      - {{ key }}
+      {%- endfor %}
       {%- if params.ssh.auth.enc is defined %}
     - enc: {{ params.ssh.auth.enc }}
       {%- endif %}
