@@ -175,7 +175,7 @@ users_{{ user }}_ssh_auth_purge:
 
       {%- if 'keys' in params.ssh.auth %}
 users_{{ user }}_ssh_auth:
-  file.present:
+  file.managed:
     - name: {{ user_home | path_join(users.ssh_auth_conf_file) }}
     - user: {{ user }}
     - group: {{ user_group }}
