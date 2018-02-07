@@ -45,13 +45,13 @@ users_{{ user }}_group:
     {%- if params.password is defined %}
     - password: '{{ params.password }}'
     {%- endif %}
-    {% if params.empty_password is defined -%}
+    {%- if params.empty_password is defined -%}
     - empty_password: {{ params.empty_password }}
     {%- endif %}
     {%- if params.enforce_password is defined %}
     - enforce_password: {{ params.enforce_password }}
     {%- endif %}
-    {% if params.hash_password is defined -%}
+    {%- if params.hash_password is defined -%}
     - hash_password: {{ params.hash_password }}
     {%- endif %}
     {%- if params.get('system', False) %}
@@ -62,7 +62,7 @@ users_{{ user }}_group:
     {%- else %}
       {%- set user_group = user %}
     - gid_from_name: True
-    {% endif -%}
+    {%- endif -%}
     {%- if params.fullname is defined %}
     - fullname: {{ params.fullname }}
     {%- endif %}
@@ -101,7 +101,7 @@ users_{{ user }}_group:
 # ssh
 #####################################################################
 
-  {% if params.ssh is defined %}
+  {%- if params.ssh is defined %}
 
     {%- set user_ssh_dir = user_home | path_join(users.ssh_key_dir) %}
 users_{{ user }}_ssh_dir:
@@ -114,7 +114,7 @@ users_{{ user }}_ssh_dir:
     - require:
       - user: {{ user }}
 
-    {% if params.ssh.config is defined %}
+    {%- if params.ssh.config is defined %}
 users_{{ user }}_ssh_config:
   file.managed:
     - name: {{ user_ssh_dir }}/config
@@ -135,12 +135,13 @@ users_{{ user }}_ssh_config:
       - file: users_{{ user }}_ssh_dir
     {%- endif %}
 
-    {% if params.ssh.keys is defined %}
-      {%- if params.ssh.keys.private is defined %}
+    {%- if 'keys' in params.ssh %}
+      {%- if 'private' in params.ssh.get('keys') and params.ssh.get('keys').private is defined %}
 users_{{ user }}_ssh_private_key:
   file.managed:
-    - name: {{ user_ssh_dir | path_join('id_' ~ params.ssh.keys.get('enc', 'rsa')) }}
-    - content: {{ params.ssh.keys.private }}
+    - name: {{ user_ssh_dir | path_join('id_' ~ params.ssh.get('keys').get('enc', 'rsa')) }}
+    - contents: |
+        {{ params.ssh.get('keys').private | indent(8) }}
     - user: {{ user }}
     - group: {{ user_group }}
     - mode: 600
@@ -149,11 +150,13 @@ users_{{ user }}_ssh_private_key:
     - require:
       - file: users_{{ user }}_ssh_dir
       {%- endif %}
-      {%- if params.ssh.keys.public is defined %}
+
+      {%- if 'public' in params.ssh.get('keys') and params.ssh.get('keys').public is defined %}
 users_{{ user }}_ssh_public_key:
   file.managed:
-    - name: {{ user_ssh_dir | path_join('id_' ~ params.ssh.keys.get('enc', 'rsa') ~ '.pub') }}
-    - content: {{ params.ssh.keys.public }}
+    - name: {{ user_ssh_dir | path_join('id_' ~ params.ssh.get('keys').get('enc', 'rsa') ~ '.pub') }}
+    - contents: |
+        {{ params.ssh.get('keys').public | indent(8) }}
     - user: {{ user }}
     - group: {{ user_group }}
     - mode: 644
