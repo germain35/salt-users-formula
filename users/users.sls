@@ -45,13 +45,13 @@ users_{{ user }}_group:
     {%- if params.password is defined %}
     - password: '{{ params.password }}'
     {%- endif %}
-    {%- if params.empty_password is defined -%}
+    {%- if params.empty_password is defined %}
     - empty_password: {{ params.empty_password }}
     {%- endif %}
     {%- if params.enforce_password is defined %}
     - enforce_password: {{ params.enforce_password }}
     {%- endif %}
-    {%- if params.hash_password is defined -%}
+    {%- if params.hash_password is defined %}
     - hash_password: {{ params.hash_password }}
     {%- endif %}
     {%- if params.get('system', False) %}
