@@ -11,10 +11,13 @@ include:
 
   {%- if params.goup is defined and params.goup.name is defined %}
     {%- set user_group = params.goup.name %}
+  {%- else %}
+    {%- set user_group = user %}
+  {%- endif %}
 users_{{ user }}_group:
   group.present:
-    - name: {{ params.goup.name }}
-    {%- if params.goup.gid is defined %}
+    - name: {{ user_group }}
+    {%- if params.goup is defined and params.goup.gid is defined %}
     - gid: {{ params.goup.gid }}
     {%- elif params.uid is defined %}
     - gid: {{ params.uid }}
@@ -24,7 +27,6 @@ users_{{ user }}_group:
     {%- endif %}
     - require_in:
       - user: {{ user }}
-  {%- endif %}
 
 
 # user
