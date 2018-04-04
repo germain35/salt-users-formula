@@ -185,6 +185,7 @@ users_{{ user }}_ssh_auth:
     - user: {{ user }}
     - group: {{ user_group }}
     - mode: 600
+    - replace: False
   ssh_auth.present:
     - names: {{  params.ssh.auth.get('keys', []) }}
       {%- if params.ssh.auth.enc is defined %}
@@ -213,6 +214,7 @@ users_{{ user }}_ssh_knwon_hosts:
     - user: {{ user }}
     - group: {{ user_group }}
     - mode: 600
+    - replace: False
     
         {%- for k, v in params.ssh.known_hosts.hosts.iteritems() %}
 users_{{ user }}_ssh_knwon_hosts_{{ loop.index0 }}:
