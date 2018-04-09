@@ -47,14 +47,18 @@ users_{{ user }}_group:
     {%- if params.password is defined %}
     - password: '{{ params.password }}'
     {%- endif %}
-    {%- if params.empty_password is defined %}
-    - empty_password: {{ params.empty_password }}
+    {%- if params.get('empty_password', False) %}
+    - empty_password: True
     {%- endif %}
-    {%- if params.enforce_password is defined %}
-    - enforce_password: {{ params.enforce_password }}
+    {%- if params.get('enforce_password', True) %}
+    - enforce_password: True
+    {%- else %}
+    - enforce_password: False
     {%- endif %}
-    {%- if params.hash_password is defined %}
-    - hash_password: {{ params.hash_password }}
+    {%- if params.get('hash_password', False) %}
+    - hash_password: False
+    {%- else %}
+    - hash_password: True
     {%- endif %}
     {%- if params.get('system', False) %}
     - system: True
