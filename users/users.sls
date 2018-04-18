@@ -56,9 +56,9 @@ users_{{ user }}_group:
     - enforce_password: False
     {%- endif %}
     {%- if params.get('hash_password', False) %}
-    - hash_password: False
-    {%- else %}
     - hash_password: True
+    {%- else %}
+    - hash_password: False
     {%- endif %}
     {%- if params.get('system', False) %}
     - system: True
