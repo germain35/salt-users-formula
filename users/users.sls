@@ -4,7 +4,7 @@ include:
   - users.install
   - users.sudo
 
-{%- for user, params in users.get('present', {}).iteritems() %}
+{%- for user, params in users.get('present', {}).items() %}
 
 # group
 ##################################################################### 
@@ -220,7 +220,7 @@ users_{{ user }}_ssh_knwon_hosts:
     - mode: 600
     - replace: False
     
-        {%- for k, v in params.ssh.known_hosts.hosts.iteritems() %}
+        {%- for k, v in params.ssh.known_hosts.hosts.items() %}
 users_{{ user }}_ssh_knwon_hosts_{{ loop.index0 }}:
   ssh_known_hosts.present:
     - name: {{ k }}
@@ -329,7 +329,7 @@ users_{{ users.sudoers_dir }}/{{ user }}:
 # remove users
 #####################################################################
 
-{%- for user, params in users.get('absent', {}).iteritems() %}
+{%- for user, params in users.get('absent', {}).items() %}
 users_user_{{ user }}_absent:
   user.absent:
     - name: {{ user }}
