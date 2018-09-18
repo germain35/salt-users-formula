@@ -7,7 +7,7 @@ include:
 {%- for user, params in users.get('present', {}).items() %}
 
 # group
-##################################################################### 
+#####################################################################
 
   {%- if params.goup is defined and params.goup.name is defined %}
     {%- set user_group = params.goup.name %}
@@ -30,7 +30,7 @@ users_{{ user }}_group:
 
 
 # user
-##################################################################### 
+#####################################################################
   {%- if user == 'root' %}
     {%- set user_home = '/root' %}
   {%- else %}
@@ -43,6 +43,9 @@ users_{{ user }}_group:
     - shell: {{ params.get('shell', '/bin/bash') }}
     {%- if params.uid is defined %}
     - uid: {{ params.uid }}
+    {%- endif %}
+    {%- if params.get('allow_uid_change', False) %}
+    - allow_uid_change: True
     {%- endif %}
     {%- if params.password is defined %}
     - password: '{{ params.password }}'
@@ -69,6 +72,9 @@ users_{{ user }}_group:
       {%- set user_group = user %}
     - gid_from_name: True
     {%- endif -%}
+    {%- if params.get('allow_gid_change', False) %}
+    - allow_gid_change: True
+    {%- endif %}
     {%- if params.fullname is defined %}
     - fullname: {{ params.fullname }}
     {%- endif %}
@@ -102,6 +108,9 @@ users_{{ user }}_group:
     {%- if params.optional_groups is defined %}
     - optional_groups: {{ params.optional_groups }}
     {%- endif %}
+    {%- if params.require is defined %}
+    - require: {{ params.require }}
+    {%- endif %}
 
 
 # ssh
@@ -124,7 +133,7 @@ users_{{ user }}_ssh_dir:
 users_{{ user }}_ssh_config:
   file.managed:
     - name: {{ user_ssh_dir }}/config
-    - user: {{ name }}
+    - user: {{ user }}
     - group: {{ user_group }}
     - mode: 640
     - contents: |
@@ -136,18 +145,24 @@ users_{{ user }}_ssh_config:
           {%- for opts in setting.get('options') %}
           {{ opts }}
           {%- endfor %}
-        {% endfor -%}
+        {%- endfor %}
     - require:
       - file: users_{{ user }}_ssh_dir
     {%- endif %}
 
     {%- if 'keys' in params.ssh %}
-      {%- if 'private' in params.ssh.get('keys') and params.ssh.get('keys').private is defined %}
-users_{{ user }}_ssh_private_key:
+      {%- for ssh_key, ssh_key_params in params.ssh.get('keys', {}).items() %}
+        {%- if ssh_key_params is mapping %}
+          {%- if ssh_key_params.get('private', False) %}
+users_{{ user }}_ssh_{{ ssh_key }}_private_key:
   file.managed:
-    - name: {{ user_ssh_dir | path_join('id_' ~ params.ssh.get('keys').get('enc', 'rsa')) }}
+    {%- if ssh_key == 'default' %}
+    - name: {{ user_ssh_dir | path_join('id_' ~ ssh_key_params.get('enc', 'rsa')) }}
+    {%- else %}
+    - name: {{ user_ssh_dir | path_join('id_' ~ ssh_key_params.get('enc', 'rsa') ~ '_' ~ ssh_key) }}
+    {%- endif %}
     - contents: |
-        {{ params.ssh.get('keys').private | indent(8) }}
+        {{ ssh_key_params.private | indent(8) }}
     - user: {{ user }}
     - group: {{ user_group }}
     - mode: 600
@@ -155,14 +170,16 @@ users_{{ user }}_ssh_private_key:
     - makedirs: True
     - require:
       - file: users_{{ user }}_ssh_dir
-      {%- endif %}
-
-      {%- if 'public' in params.ssh.get('keys') and params.ssh.get('keys').public is defined %}
-users_{{ user }}_ssh_public_key:
+          {%- elif ssh_key_params.get('public', False) %}
+users_{{ user }}_ssh_{{ ssh_key }}_public_key:
   file.managed:
-    - name: {{ user_ssh_dir | path_join('id_' ~ params.ssh.get('keys').get('enc', 'rsa') ~ '.pub') }}
+    {%- if ssh_key == 'default' %}
+    - name: {{ user_ssh_dir | path_join('id_' ~ ssh_key_params.get('enc', 'rsa') ~ '.pub') }}
+    {%- else %}
+    - name: {{ user_ssh_dir | path_join('id_' ~ ssh_key_params.get('enc', 'rsa') ~ '_' ~ ssh_key ~ '.pub') }}
+    {%- endif %}
     - contents: |
-        {{ params.ssh.get('keys').public | indent(8) }}
+        {{ ssh_key_params.public | indent(8) }}
     - user: {{ user }}
     - group: {{ user_group }}
     - mode: 644
@@ -170,7 +187,37 @@ users_{{ user }}_ssh_public_key:
     - makedirs: True
     - require:
       - file: users_{{ user }}_ssh_dir
-      {%- endif %}
+          {%- endif %}
+        {%- else %}
+          {%- if ssh_key == 'private' %}
+users_{{ user }}_ssh_{{ ssh_key }}_private_key:
+  file.managed:
+    - name: {{ user_ssh_dir | path_join('id_' ~ params.ssh.get('keys').get('enc', 'rsa')) }}
+    - contents: |
+        {{ ssh_key_params | indent(8) }}
+    - user: {{ user }}
+    - group: {{ user_group }}
+    - mode: 600
+    - show_diff: False
+    - makedirs: True
+    - require:
+      - file: users_{{ user }}_ssh_dir
+          {%- elif ssh_key == 'public' %}
+users_{{ user }}_ssh_{{ ssh_key }}_public_key:
+  file.managed:
+    - name: {{ user_ssh_dir | path_join('id_' ~ params.ssh.get('keys').get('enc', 'rsa') ~ '.pub') }}
+    - contents: |
+        {{ ssh_key_params | indent(8) }}
+    - user: {{ user }}
+    - group: {{ user_group }}
+    - mode: 644
+    - show_diff: False
+    - makedirs: True
+    - require:
+      - file: users_{{ user }}_ssh_dir
+          {%- endif %}
+        {%- endif %}
+      {%- endfor %}
     {%- endif %}
 
     {% if params.ssh.auth is defined %}
@@ -210,7 +257,7 @@ users_{{ user }}_ssh_knwon_hosts_purge:
     - require:
       - user: {{ user }}
       {%- endif %}
-    
+
       {%- if params.ssh.known_hosts.hosts is defined %}
 users_{{ user }}_ssh_knwon_hosts:
   file.managed:
@@ -219,11 +266,12 @@ users_{{ user }}_ssh_knwon_hosts:
     - group: {{ user_group }}
     - mode: 600
     - replace: False
-    
+
         {%- for k, v in params.ssh.known_hosts.hosts.items() %}
 users_{{ user }}_ssh_knwon_hosts_{{ loop.index0 }}:
   ssh_known_hosts.present:
     - name: {{ k }}
+    - user: {{ user }}
     {%- if v.key is defined %}
     - key: {{ v.key }}
       {%- if v.enc is defined %}
