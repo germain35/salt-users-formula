@@ -170,7 +170,8 @@ users_{{ user }}_ssh_{{ ssh_key }}_private_key:
     - makedirs: True
     - require:
       - file: users_{{ user }}_ssh_dir
-          {%- elif ssh_key_params.get('public', False) %}
+          {%- endif %}
+          {%- if ssh_key_params.get('public', False) %}
 users_{{ user }}_ssh_{{ ssh_key }}_public_key:
   file.managed:
     {%- if ssh_key == 'default' %}
@@ -388,3 +389,4 @@ users_user_{{ user }}_absent:
     - force: {{ params.force }}
     {%- endif %}
 {%- endfor %}
+
