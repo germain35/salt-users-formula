@@ -9,16 +9,16 @@ include:
 # group
 #####################################################################
 
-  {%- if params.goup is defined and params.goup.name is defined %}
-    {%- set user_group = params.goup.name %}
+  {%- if params.group is defined and params.group.name is defined %}
+    {%- set user_group = params.group.name %}
   {%- else %}
     {%- set user_group = user %}
   {%- endif %}
 users_{{ user }}_group:
   group.present:
     - name: {{ user_group }}
-    {%- if params.goup is defined and params.goup.gid is defined %}
-    - gid: {{ params.goup.gid }}
+    {%- if params.group is defined and params.group.gid is defined %}
+    - gid: {{ params.group.gid }}
     {%- elif params.uid is defined %}
     - gid: {{ params.uid }}
     {%- endif %}
@@ -389,4 +389,3 @@ users_user_{{ user }}_absent:
     - force: {{ params.force }}
     {%- endif %}
 {%- endfor %}
-
