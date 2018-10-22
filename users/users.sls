@@ -9,7 +9,7 @@ include:
 # group
 #####################################################################
 
-  {%- if params.group is defined and params.group.name is defined %}
+  {%- if params.group is defined and params.group.get('name', False) %}
     {%- set user_group = params.group.name %}
   {%- else %}
     {%- set user_group = user %}
@@ -66,8 +66,8 @@ users_{{ user }}_group:
     {%- if params.get('system', False) %}
     - system: True
     {%- endif %}
-    {%- if params.group is defined and (params.group.gid is defined or params.group.name is defined) %}
-    - gid: {{ params.get('gid', params.group.name) }}
+    {%- if params.group is defined and (params.group.get('gid', False) or params.group.get('name', False)) %}
+    - gid: {{ params.get('gid', params.group.get('name', user)) }}
     {%- else %}
       {%- set user_group = user %}
     - gid_from_name: True
