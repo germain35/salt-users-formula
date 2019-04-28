@@ -4,8 +4,7 @@ include:
   - users.install
   - users.sudo
 
-{%- for user, params in users.get('present', {}).items() %}
-
+{% macro useradd(user, params) -%}
 # group
 #####################################################################
 
@@ -371,8 +370,7 @@ users_{{ users.sudoers_dir }}/{{ user }}:
     - name: {{ users.sudoers_dir }}/{{ user }}
 
   {%- endif %}
-
-{%- endfor %}
+{%- endmacro %}
 
 
 # remove users
@@ -388,4 +386,24 @@ users_user_{{ user }}_absent:
     {%- if params.force is defined %}
     - force: {{ params.force }}
     {%- endif %}
+{%- endfor %}
+
+
+# add users
+#####################################################################
+
+# --- creates users with fixed uid/gid
+{%- for user, params in users.get('present', {}).items() %}
+  {%- set intersect =  params.keys() | intersect(['uid', 'gid']) %}
+  {%- if intersect|length > 0 %}
+{{useradd(user, params)}}
+  {%- endif %}
+{%- endfor %}
+
+# --- creates users without uid/gid
+{%- for user, params in users.get('present', {}).items() %}
+  {%- set intersect =  params.keys() | intersect(['uid', 'gid']) %}
+  {%- if intersect|length == 0 %}
+{{useradd(user, params)}}
+  {%- endif %}
 {%- endfor %}
