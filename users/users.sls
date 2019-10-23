@@ -18,8 +18,6 @@ users_{{ user }}_group:
     - name: {{ user_group }}
     {%- if params.group is defined and params.group.gid is defined %}
     - gid: {{ params.group.gid }}
-    {%- elif params.uid is defined %}
-    - gid: {{ params.uid }}
     {%- endif %}
     {%- if params.system is defined  and params.system %}
     - system: True
@@ -272,13 +270,19 @@ users_{{ user }}_ssh_knwon_hosts_{{ loop.index0 }}:
   ssh_known_hosts.present:
     - name: {{ k }}
     - user: {{ user }}
+    {%- if v.port is defined %}
+    - port: {{ v.port }}
+    {%- endif %}
+    {%- if v.enc is defined %}
+    - enc: {{ v.enc }}
+    {%- endif %}
     {%- if v.key is defined %}
     - key: {{ v.key }}
-      {%- if v.enc is defined %}
-    - enc: {{ v.enc }}
-      {%- endif %}
     {%- elif v.fingerprint is defined %}
     - fingerprint: {{ v.fingerprint }}
+      {%- if v.fingerprint_hash_type is defined %}
+    - fingerprint_hash_type: {{ v.fingerprint_hash_type }}
+      {%- endif %}
     {%- endif %}
     - require:
       - file: users_{{ user }}_ssh_knwon_hosts
